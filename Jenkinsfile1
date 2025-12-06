@@ -19,7 +19,7 @@ pipeline {
         stage('Run JMeter Tests') {
             steps {
                 bat """
-                docker run --rm -v %cd%\\JMX_Files:/tests -w /tests ${IMAGE_NAME} ^
+                docker run --rm -v %cd%\\:/tests -w /tests ${IMAGE_NAME} ^
                 -n -t AB_ACCOUNT_SUMMARY.jmx -l AB_ACCOUNT_SUMMARY_results.jtl
                 """
             }
