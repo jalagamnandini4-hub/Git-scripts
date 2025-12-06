@@ -19,14 +19,14 @@ pipeline {
                 // Use bat instead of sh and adjust volume mount for Windows PowerShell syntax
                 bat """
                 docker run --rm -v %cd%\\JMX_Files:/tests -w /tests ${IMAGE_NAME} ^
-                -n -t Sample.jmx -l results.jtl
+                -n -t AB_ACCOUNT_SUMMARY.jmx -l AB_ACCOUNT_SUMMARY_results.jtl
                 """
             }
         }
 
         stage('Archive Results') {
             steps {
-                archiveArtifacts artifacts: 'JMX_Files/results.jtl, report/**', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'AB_ACCOUNT_SUMMARY_results.jtl, report/**', allowEmptyArchive: true
             }
         }
     }
