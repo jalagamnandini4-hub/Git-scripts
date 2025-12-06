@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'nandini345/jmetertesting:v1.0'
+        TEST_REPO = 'https://github.com/jalagamnandini4-hub/Git-scripts.git'
+    }
+
+    stages {
+
+        stage('Checkout Tests') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'GitHub-PAT',
+                    url: TEST_REPO
+            }
+        }
+
+        stage('Run JMeter Tests') {
+            steps {
+                bat """
+                docker run --rm -v %cd%\\JMX_Files:/tests -w /tests ${IMAGE_NAME} ^
+                -n -t AB_ACCOUNT_SUMMARY.jmx -l AB_ACCOUNT_SUMMARY_results.jtl
+                """
+            }
+        }
+
+        stage('Archive Results') {
+            steps {
+                archiveArtifacts artifacts: 'AB_ACCOUNT_SUMMARY_results.jtl, report/**', allowEmptyArchive: true
+            }
+        }
+
+        stage('Push Results to GitHub') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'GitHub-PAT',
+                        usernameVariable: 'GIT_USER',
+                        passwordVariable: 'GIT_PASS'
+                    )
+                ]) {
+                    bat """
+                    git config --global user.email "jalagamnandini4@gmail.com"
+                    git config --global user.name "jalagamnandini4-hub"
+
+                    rem Pull latest changes first
+                    git pull https://%GIT_USER%:%GIT_PASS%@github.com/jalagamnandini4-hub/Git-scripts.git main
+
+                    rem Create results folder if not exists
+                    if not exist results mkdir results
+
+                    rem Append build number to results file and folder
+                    set BUILD_NUM=%BUILD_NUMBER%
+                    copy /Y AB_ACCOUNT_SUMMARY_results.jtl results\\results_%BUILD_NUM%.jtl
+                    xcopy /E /I /Y report results\\report_%BUILD_NUM%
+
+                    git add results\\
+
+                    git commit -m "Automated: Add latest JMeter results for build #%BUILD_NUM%" || echo Nothing to commit
+
+                    git push https://%GIT_USER%:%GIT_PASS%@github.com/jalagamnandini4-hub/Git-scripts.git main
+                    """
+                }
+            }
+        }
+    }
+}
